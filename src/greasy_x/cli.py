@@ -52,11 +52,18 @@ def convert_to_stage_jsonl(processed_conv: dict, output_dir: str) -> bool:
         return False
 
 
-def run_export(json_file, formats, include_thinking, output_dir):
+def run_export(json_file, formats, include_thinking, output_dir, sample=None):
     os.makedirs(output_dir, exist_ok=True)
     conversations = ex.load_conversations(json_file)
     if not conversations:
         return 1
+    total_all = len(conversations)
+    if sample is not None:
+        if sample < 0:
+            print("Error: --sample N must be >= 0")
+            return 2
+        conversations = conversations[:sample]
+        print(f"[greasy_x] --sample {sample}: using {len(conversations)} of {total_all}")
     total = len(conversations)
     ok_conv = skipped = 0
     print(f"[greasy_x] Processing {total} conversations...")
@@ -103,7 +110,15 @@ def main(argv=None):
     parser.add_argument("-all", "--all-formats", action="store_true")
     parser.add_argument("-t", "--thinking", action="store_true")
     parser.add_argument("-i", "--interactive", action="store_true")
+    parser.add_argument(
+        "--sample",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Only process first N conversations (safe for large exports / agent loops)",
+    )
     args = parser.parse_args(argv)
+    sample = args.sample
     if args.interactive or not args.json_file:
         json_file, formats, include_thinking = interactive()
     else:
@@ -119,7 +134,7 @@ def main(argv=None):
             if args.stage_jsonl: formats.append("stage")
             if not formats: formats = ["md"]
     output_dir = args.output_dir or os.path.dirname(os.path.abspath(json_file)) or "."
-    return run_export(json_file, formats, include_thinking, output_dir)
+    return run_export(json_file, formats, include_thinking, output_dir, sample=sample)
 
 
 if __name__ == "__main__":
