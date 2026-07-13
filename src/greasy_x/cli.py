@@ -1,4 +1,4 @@
-"""greasy_x CLI — base (export + stage v0)."""
+"""greasy_x CLI — PR-01 sample + PR-02 validate."""
 from __future__ import annotations
 
 import argparse
@@ -52,12 +52,47 @@ def convert_to_stage_jsonl(processed_conv: dict, output_dir: str) -> bool:
         return False
 
 
+def load_backend(json_file: str):
+    path = Path(json_file)
+    if not path.is_file():
+        return None, f"Error: file not found: {json_file}"
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        return None, f"Error: invalid JSON: {e}"
+    except OSError as e:
+        return None, f"Error: cannot read file: {e}"
+    if not isinstance(data, dict):
+        return None, "Error: root JSON value must be an object"
+    if "conversations" not in data:
+        return (
+            None,
+            "Error: missing 'conversations' key — not a prod-grok-backend-style export "
+            "(do not use Prometheus grok_exporter logs here)",
+        )
+    if not isinstance(data["conversations"], list):
+        return None, "Error: 'conversations' must be a list"
+    return data["conversations"], None
+
+
+def validate_backend_path(json_file: str) -> int:
+    conversations, err = load_backend(json_file)
+    if err:
+        print(err)
+        return 1
+    print(f"[greasy_x] validate OK: {json_file}  conversations={len(conversations)}")
+    return 0
+
+
 def run_export(json_file, formats, include_thinking, output_dir, sample=None):
     os.makedirs(output_dir, exist_ok=True)
-    conversations = ex.load_conversations(json_file)
-    if not conversations:
+    conversations, err = load_backend(json_file)
+    if err:
+        print(err)
         return 1
     total_all = len(conversations)
+    print(f"[greasy_x] validate OK: {json_file}  conversations={total_all}")
     if sample is not None:
         if sample < 0:
             print("Error: --sample N must be >= 0")
@@ -94,9 +129,7 @@ def interactive():
     print("greasy_x interactive")
     default_path = str(Path.cwd() / "prod-grok-backend.json")
     json_file = input(f"JSON path [{default_path}]: ").strip() or default_path
-    formats = ["md"]
-    include_thinking = False
-    return json_file, formats, include_thinking
+    return json_file, ["md"], False
 
 
 def main(argv=None):
@@ -110,14 +143,18 @@ def main(argv=None):
     parser.add_argument("-all", "--all-formats", action="store_true")
     parser.add_argument("-t", "--thinking", action="store_true")
     parser.add_argument("-i", "--interactive", action="store_true")
+    parser.add_argument("--sample", type=int, default=None, metavar="N")
     parser.add_argument(
-        "--sample",
-        type=int,
-        default=None,
-        metavar="N",
-        help="Only process first N conversations (safe for large exports / agent loops)",
+        "--validate-only",
+        action="store_true",
+        help="Only validate backend JSON shape; do not export",
     )
     args = parser.parse_args(argv)
+    if args.validate_only:
+        if not args.json_file:
+            print("Error: json_file required with --validate-only")
+            return 2
+        return validate_backend_path(args.json_file)
     sample = args.sample
     if args.interactive or not args.json_file:
         json_file, formats, include_thinking = interactive()
