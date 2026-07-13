@@ -1,0 +1,22 @@
+[project]
+name = "greasy-x"
+version = "0.1.0"
+description = "Grok account export pipeline: thinking-aware parse → Stage JSONL → ingestion handoff (greasy_x)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Olivia bunker / greasy_x" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+greasy-x = "greasy_x.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

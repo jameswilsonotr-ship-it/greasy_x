@@ -1,0 +1,42 @@
+{
+  "conversations": [
+    {
+      "conversation": {
+        "id": "conv-fixture-001",
+        "title": "Fixture Chat Thinking",
+        "create_time": "2026-07-01T12:00:00Z"
+      },
+      "responses": [
+        {
+          "response": {
+            "sender": "Human",
+            "message": "What is 2+2?",
+            "create_time": "2026-07-01T12:00:01Z",
+            "model": ""
+          }
+        },
+        {
+          "response": {
+            "sender": "Assistant",
+            "message": "4",
+            "create_time": "2026-07-01T12:00:02Z",
+            "model": "grok",
+            "agent_thinking_traces": [
+              {
+                "thinking_trace": "Simple arithmetic. Answer is 4."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "conversation": {
+        "id": "conv-fixture-002",
+        "title": "Empty Title Skip",
+        "create_time": "2026-07-01T13:00:00Z"
+      },
+      "responses": []
+    }
+  ]
+}
